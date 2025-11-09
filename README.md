@@ -7,6 +7,8 @@ assignments to avoid overfitting. The codebase has been reorganised into a
 Python package so that it can be reused from scripts or invoked directly from
 the command line.
 
+📚 **New to ID3?** Check out [ALGORITHM_GUIDE.md](./ALGORITHM_GUIDE.md) for a comprehensive visual guide with step-by-step examples and diagrams!
+
 ### Project layout
 
 ```
@@ -42,11 +44,138 @@ parent node is used. Post-pruning repeats the standard randomized procedure:
 
 1. Clone the tree produced on the training data.
 2. Repeat $L$ times:
-	 - Copy the current tree and randomly replace up to $M \sim \mathcal{U}(1, K)$
-		 non-leaf nodes with leaves labelled by the majority class at that node.
-	 - Keep the candidate if it improves accuracy on the validation split.
+   - Copy the current tree and randomly replace up to $M \sim \mathcal{U}(1, K)$
+     non-leaf nodes with leaves labelled by the majority class at that node.
+   - Keep the candidate if it improves accuracy on the validation split.
 
-### Installation
+### Visual explanation
+
+#### How ID3 builds a decision tree
+
+```
+Step 1: Start with training data
+┌─────────────────────────────────┐
+│  Attr_A  Attr_B  Attr_C  Class  │
+│    0       1       0       1    │
+│    1       0       1       0    │
+│    0       1       1       1    │
+│    1       1       0       1    │
+│    ...    ...     ...     ...   │
+└─────────────────────────────────┘
+         ↓
+Calculate entropy/variance for each attribute
+         ↓
+Step 2: Select best attribute (highest information gain)
+         ↓
+    ┌────────┐
+    │ Attr_A │  ← Root node (best split)
+    └───┬────┘
+        │
+   ┌────┴────┐
+   ↓         ↓
+ A=0       A=1
+```
+
+#### Recursive splitting
+
+```
+         Root
+          │
+    ┌─────┴─────┐
+    │           │
+  A = 0       A = 1
+    │           │
+    ↓           ↓
+Split on    Split on
+Attr_B      Attr_C
+    │           │
+┌───┴───┐   ┌───┴───┐
+↓       ↓   ↓       ↓
+B=0    B=1  C=0    C=1
+│       │    │      │
+0       1    1      0  ← Leaf nodes (predictions)
+```
+
+#### Example decision tree output
+
+```
+Weather = Sunny :
+| Humidity = High : No
+| Humidity = Low : Yes
+Weather = Overcast : Yes
+Weather = Rainy :
+| Wind = Strong : No
+| Wind = Weak : Yes
+```
+
+This tree structure means:
+- If weather is sunny AND humidity is high → predict No
+- If weather is sunny AND humidity is low → predict Yes
+- If weather is overcast (regardless of other factors) → predict Yes
+- If weather is rainy AND wind is strong → predict No
+- If weather is rainy AND wind is weak → predict Yes
+
+#### Post-pruning visualization
+
+```
+Before Pruning:              After Pruning:
+    Root                         Root
+     │                            │
+  ┌──┴──┐                     ┌───┴───┐
+  A     B                     A       1 ← Subtree replaced
+  │     │                     │         with leaf
+ ┌┴┐   ┌┴┐                   ┌┴┐
+ C D   E F                   C D
+ │ │   │ │                   │ │
+ 0 1   1 0                   0 1
+
+The pruned tree is simpler and may generalize better!
+```
+
+#### Entropy vs Variance comparison
+
+```
+Dataset: [++++++----]  (6 positive, 4 negative)
+
+Entropy approach:
+  H(S) = -0.6·log₂(0.6) - 0.4·log₂(0.4)
+       ≈ 0.971 bits
+
+Variance approach:
+  V(S) = 0.6 × 0.4
+       = 0.24
+
+Both measure impurity, but entropy is theoretically
+more principled while variance is computationally simpler.
+
+Pure sets have 0 impurity:
+  [++++++++++] → H=0, V=0
+  [----------] → H=0, V=0
+
+Maximum impurity at 50/50 split:
+  [+++++-----] → H=1.0, V=0.25
+```
+
+#### Information gain illustrated
+
+```
+Parent node: [+++++-----]  (H = 0.971)
+                │
+        Split on Attribute X
+                │
+       ┌────────┴────────┐
+       ↓                 ↓
+    X = 0             X = 1
+  [++++--]          [+---]
+  H = 0.918        H = 0.811
+  (6 samples)      (4 samples)
+
+Weighted average = (6/10)·0.918 + (4/10)·0.811 = 0.875
+
+Information Gain = 0.971 - 0.875 = 0.096
+
+Higher gain = better split!
+```### Installation
 
 ```
 python -m venv .venv
