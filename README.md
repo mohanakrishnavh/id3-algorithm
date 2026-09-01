@@ -1,5 +1,8 @@
 ## ID3 Algorithm Playground
 
+[![CI](https://github.com/mohanakrishnavh/id3-algorithm/actions/workflows/ci.yml/badge.svg)](https://github.com/mohanakrishnavh/id3-algorithm/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 This repository offers a clean implementation of the ID3 decision tree algorithm
 with two heuristics: classic information gain (entropy) and variance impurity.
 It also demonstrates the randomized post-pruning strategy often used in
@@ -216,7 +219,26 @@ If `print_tree=yes`, the unpruned tree and the best pruned tree are displayed.
 Historical experiment logs are preserved under `reports/` for reference. They
 match the output format produced by the new CLI for reproducibility.
 
+### Testing
+
+```bash
+pip install -r requirements.txt pytest
+pytest -v
+```
+
+`tests/` covers `entropy()`, `_information_gain()`, and `construct_tree()` /
+`calculate_accuracy()` against small, hand-worked synthetic datasets rather
+than the `data_sets*/` CSVs referenced above — those aren't checked into the
+repo (the CLI expects you to supply your own training/validation/test
+files), so the tests build their own minimal datasets in-memory instead,
+with expected outcomes derived independently of the implementation. CI runs
+this suite on Python 3.9, 3.11, and 3.12 on every push and PR to `main`.
+
 ### Next steps
 
 - Extend the tree printer to export Graphviz `.dot` files for visualisation.
-- Add automated tests that validate the pruning routine using synthetic data.
+- Add tests for the randomized post-pruning routine (`post_pruning`) — the
+  current suite covers tree construction and the splitting heuristics, not
+  pruning itself, which is harder to test deterministically given its use
+  of `random.choice`/`random.randint` (would need a seeded RNG or an
+  injectable random source to assert on specific outcomes).
